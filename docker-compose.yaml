@@ -1,0 +1,7 @@
+services:
+  focus:
+    container_name: focus
+    image: ghcr.io/m-mattia-m/PocketBase:0.0.1
+    environment:
+      # optional: to encrypt settings
+      PB_ENCRYPTION_KEY: "6Cz50bHwZUwW8Rpm8QQCyP6RTm1ffKmC" # random 32 characters
