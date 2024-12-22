@@ -8,7 +8,7 @@ on:
       - 'develop/**'
 
 env:
-  IMAGE_NAME: PocketBase
+  IMAGE_NAME: pocketbase
 
 jobs:
   build:

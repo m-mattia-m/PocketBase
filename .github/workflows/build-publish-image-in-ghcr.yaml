@@ -6,7 +6,7 @@ on:
       - created
 
 env:
-  IMAGE_NAME: PocketBase
+  IMAGE_NAME: pocketbase
   IMAGE_TAG: ${{ github.event.release.tag_name }} # eg. v0.0.1
   GH_USERNAME: m-mattia-m
 
