@@ -6,3 +6,4 @@ promise something. However, I use this image for my own projects, so it probably
 
 [See all versions](https://github.com/m-mattia-m/focus/pkgs/container/pocketbase/versions)
 
+[Example docker compose](https://github.com/m-mattia-m/PocketBase/blob/main/docker-compose.yaml)
