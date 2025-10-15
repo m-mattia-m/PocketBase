@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build image
-        run: docker build . --file ./.docker/Dockerfile --tag $IMAGE_NAME --label $IMAGE_TAG
+        run: docker build . --file ./Dockerfile --tag $IMAGE_NAME --label $IMAGE_TAG
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Add tag to image
