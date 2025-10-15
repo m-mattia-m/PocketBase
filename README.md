@@ -14,7 +14,7 @@ promise something. However, I use this image for my own projects, so it probably
 
 - `PB_SUPERUSER_EMAIL` to set the email of the initial admin user
 - `PB_SUPERUSER_PASSWORD` to set the password of the initial admin user
-
+- `PB_DATA_DIR` (optional) to set the data directory (default is `/pb_data`)
 ### Start the container
 
 ```bash
