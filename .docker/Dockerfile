@@ -18,5 +18,7 @@ RUN unzip /tmp/pb.zip -d /pb/
 
 EXPOSE 8080
 
+# set the entrypoint to the PocketBase binary
+ENTRYPOINT ["/pb/pocketbase"]
 # start PocketBase
 CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
