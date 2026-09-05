@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive image version from PB_VERSION
+        id: version
+        run: |
+          set -euo pipefail
+
+          PB_VERSION="$(sed -n 's/^ARG PB_VERSION=\([0-9][0-9A-Za-z.\-]*\).*/\1/p' Dockerfile | head -n1)"
+          if [ -z "$PB_VERSION" ]; then
+            echo "::error::Could not read ARG PB_VERSION from the Dockerfile"
+            exit 1
+          fi
+
+          if ! printf '%s' "$PB_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::PB_VERSION '$PB_VERSION' is not a major.minor.patch version"
+            exit 1
+          fi
+
+          PB_MAJOR="${PB_VERSION%%.*}"
+          PB_REST="${PB_VERSION#*.}"
+          PB_MINOR="${PB_REST%%.*}"
+          PB_PATCH="${PB_REST#*.}"
+
+          # PocketBase is still pre-1.0, so its 0.MINOR.PATCH maps onto our
+          # 1.MINOR.PATCH. Once PocketBase reaches 1.x we stay one major ahead.
+          IMAGE_MAJOR=$((PB_MAJOR + 1))
+          VERSION="${IMAGE_MAJOR}.${PB_MINOR}.${PB_PATCH}"
+
+          echo "pb_version=$PB_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "PocketBase v$PB_VERSION -> image $VERSION"
+
+      - name: Check whether the release already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists - nothing to do."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PB_VERSION: ${{ steps.version.outputs.pb_version }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            "Image for [PocketBase v${PB_VERSION}](https://github.com/pocketbase/pocketbase/releases/tag/v${PB_VERSION})." \
+            "" \
+            '```bash' \
+            "docker pull ghcr.io/${GITHUB_REPOSITORY_OWNER}/pocketbase:${VERSION}" \
+            '```' > release-notes.md
+
+          gh release create "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --notes-file release-notes.md
+
+      - name: Trigger the image build and push
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # A release created with GITHUB_TOKEN does not fire the `release`
+          # event, so dispatch the publish workflow explicitly.
+          gh workflow run build-publish-image-in-ghcr.yaml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            --field image_tag="$VERSION"

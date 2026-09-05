@@ -4,21 +4,37 @@ on:
   release:
     types:
       - created
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to build and push (eg. 1.40.2)'
+        required: true
+        type: string
 
 env:
   IMAGE_NAME: pocketbase
-  IMAGE_TAG: ${{ github.event.release.tag_name }} # eg. v0.0.1
+  IMAGE_TAG: ${{ github.event.release.tag_name || inputs.image_tag }} # eg. 1.40.2
   GH_USERNAME: m-mattia-m
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-${{ github.event.release.tag_name || inputs.image_tag }}
+  cancel-in-progress: false
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.image_tag }}
       - name: Build image
         run: docker build . --file ./Dockerfile --tag $IMAGE_NAME --label $IMAGE_TAG
       - name: Log in to registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Add tag to image
         run: docker tag $IMAGE_NAME ghcr.io/$GH_USERNAME/$IMAGE_NAME:$IMAGE_TAG
       - name: Push image to container-registry
