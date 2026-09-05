@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-ARG PB_VERSION=0.23.11
+ARG PB_VERSION=0.40.2
 
 RUN apk add --no-cache unzip ca-certificates bash
 
