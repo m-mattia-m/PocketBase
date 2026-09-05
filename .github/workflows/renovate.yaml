@@ -39,6 +39,10 @@ jobs:
           LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_PLATFORM: github
+          # Pin the commit identity to the machine account. Renovate blocks any
+          # branch whose last commit was not made by this author, so it must stay
+          # stable across runs.
+          RENOVATE_GIT_AUTHOR: 'm-mattia-m-machine <157844265+m-mattia-m-machine@users.noreply.github.com>'
           RENOVATE_ONBOARDING: 'false'
           RENOVATE_REQUIRE_CONFIG: 'required'
           RENOVATE_DRY_RUN: ${{ inputs.dryRun == true && 'full' || 'null' }}
