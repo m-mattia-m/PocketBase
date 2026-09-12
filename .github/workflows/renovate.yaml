@@ -2,30 +2,13 @@ name: Renovate
 
 on:
   schedule:
-    # Saturday 03:00 Europe/Zurich (01:00 UTC in summer, 02:00 UTC in winter).
-    # The extra runs cover the DST offset and give Renovate a second pass to
-    # merge branches whose checks only went green after the first pass.
-    # The actual update window is enforced by "schedule" in renovate.json.
+    # Saturday 03:00 Europe/Zurich. Repeated because GitHub delays scheduled
+    # runs and sometimes skips them entirely.
     - cron: '0 1,2,3,4 * * 6'
   workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'Renovate log level'
-        required: false
-        default: 'info'
-        type: choice
-        options:
-          - info
-          - debug
-      dryRun:
-        description: 'Run without creating or merging anything'
-        required: false
-        default: false
-        type: boolean
 
 concurrency:
   group: renovate
-  cancel-in-progress: false
 
 jobs:
   renovate:
@@ -36,19 +19,14 @@ jobs:
       - name: Run Renovate
         uses: renovatebot/github-action@v46.2.5
         env:
-          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_PLATFORM: github
-          # Pin the commit identity to the machine account. Renovate blocks any
-          # branch whose last commit was not made by this author, so it must stay
-          # stable across runs.
-          RENOVATE_GIT_AUTHOR: 'm-mattia-m-machine <157844265+m-mattia-m-machine@users.noreply.github.com>'
           RENOVATE_ONBOARDING: 'false'
           RENOVATE_REQUIRE_CONFIG: 'required'
-          RENOVATE_DRY_RUN: ${{ inputs.dryRun == true && 'full' || 'null' }}
-          # Manual runs should not have to wait for the Saturday window.
-          RENOVATE_FORCE: ${{ github.event_name == 'workflow_dispatch' && '{"schedule":["at any time"]}' || '{}' }}
+          # Renovate ignores any branch whose last commit has a different
+          # author, so this has to stay stable.
+          RENOVATE_GIT_AUTHOR: 'm-mattia-m-machine <157844265+m-mattia-m-machine@users.noreply.github.com>'
         with:
-          # A PAT (repo scope) is required: pushes and merges made with the
-          # default GITHUB_TOKEN do not trigger the release workflow.
+          # Needs a PAT. Merges made with GITHUB_TOKEN don't trigger the
+          # release workflow.
           token: ${{ secrets.RENOVATE_TOKEN || secrets.GITHUB_TOKEN }}

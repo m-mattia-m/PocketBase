@@ -5,17 +5,14 @@
     ":dependencyDashboard"
   ],
   "timezone": "Europe/Zurich",
-  "schedule": [
-    "* 3-5 * * 6"
-  ],
-  "prHourlyLimit": 0,
-  "prConcurrentLimit": 0,
   "labels": [
     "dependencies"
   ],
   "automerge": true,
   "automergeType": "pr",
   "platformAutomerge": true,
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
   "customManagers": [
     {
       "customType": "regex",
@@ -34,24 +31,10 @@
   ],
   "packageRules": [
     {
-      "description": "PocketBase itself - a merge to main triggers the release workflow",
-      "matchDatasources": [
-        "github-releases"
-      ],
       "matchPackageNames": [
         "pocketbase/pocketbase"
       ],
-      "commitMessageTopic": "PocketBase",
-      "automerge": true
-    },
-    {
-      "description": "Base image and GitHub Actions",
-      "matchManagers": [
-        "dockerfile",
-        "docker-compose",
-        "github-actions"
-      ],
-      "automerge": true
+      "commitMessageTopic": "PocketBase"
     }
   ]
 }

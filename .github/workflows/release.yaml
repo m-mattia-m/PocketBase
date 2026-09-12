@@ -17,40 +17,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
-      - name: Derive image version from PB_VERSION
+      - name: Derive version
         id: version
         run: |
           set -euo pipefail
 
           PB_VERSION="$(sed -n 's/^ARG PB_VERSION=\([0-9][0-9A-Za-z.\-]*\).*/\1/p' Dockerfile | head -n1)"
-          if [ -z "$PB_VERSION" ]; then
-            echo "::error::Could not read ARG PB_VERSION from the Dockerfile"
-            exit 1
-          fi
-
           if ! printf '%s' "$PB_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::PB_VERSION '$PB_VERSION' is not a major.minor.patch version"
+            echo "::error::Could not read a major.minor.patch PB_VERSION from the Dockerfile"
             exit 1
           fi
 
+          # 0.40.2 -> 1.40.2
           PB_MAJOR="${PB_VERSION%%.*}"
           PB_REST="${PB_VERSION#*.}"
-          PB_MINOR="${PB_REST%%.*}"
-          PB_PATCH="${PB_REST#*.}"
-
-          # PocketBase is still pre-1.0, so its 0.MINOR.PATCH maps onto our
-          # 1.MINOR.PATCH. Once PocketBase reaches 1.x we stay one major ahead.
-          IMAGE_MAJOR=$((PB_MAJOR + 1))
-          VERSION="${IMAGE_MAJOR}.${PB_MINOR}.${PB_PATCH}"
+          VERSION="$((PB_MAJOR + 1)).${PB_REST}"
 
           echo "pb_version=$PB_VERSION" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "PocketBase v$PB_VERSION -> image $VERSION"
 
-      - name: Check whether the release already exists
+      - name: Check for an existing release
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $VERSION already exists - nothing to do."
+            echo "$VERSION already released."
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -85,15 +73,14 @@ jobs:
             --title "$VERSION" \
             --notes-file release-notes.md
 
-      - name: Trigger the image build and push
+      - name: Publish image
         if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          # A release created with GITHUB_TOKEN does not fire the `release`
-          # event, so dispatch the publish workflow explicitly.
+          # A release created with GITHUB_TOKEN doesn't fire the release event.
           gh workflow run build-publish-image-in-ghcr.yaml \
             --repo "$GITHUB_REPOSITORY" \
             --ref main \

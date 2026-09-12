@@ -23,39 +23,22 @@ docker run -d -p 8080:8080 -e PB_SUPERUSER_EMAIL='admin@example.com' --env PB_SU
 
 ## Versioning
 
-The image version mirrors the PocketBase version it ships, one major ahead:
+The image version follows the PocketBase version it contains, one major ahead.
+PocketBase `v0.40.2` becomes `1.40.2`.
 
-| PocketBase | Image    |
-|------------|----------|
-| `v0.23.11` | `1.23.11`|
-| `v0.40.2`  | `1.40.2` |
+## Updates
 
-PocketBase is still pre-`1.0`, so `0.MINOR.PATCH` maps onto `1.MINOR.PATCH`. If PocketBase
-ever reaches `1.x`, this image stays one major ahead (`2.MINOR.PATCH`).
+Renovate runs every Saturday and opens a PR when there is a newer PocketBase release.
+Merging that PR triggers the release workflow, which tags the repo and pushes the new
+image to GHCR.
 
-## Automated updates
+For this to work without me:
 
-[Renovate](https://docs.renovatebot.com/) watches the PocketBase releases and keeps
-`ARG PB_VERSION` in the [Dockerfile](./Dockerfile) up to date. It runs every **Saturday at
-03:00 (Europe/Zurich)** via [`.github/workflows/renovate.yaml`](./.github/workflows/renovate.yaml)
-and automerges once the image builds successfully.
-
-Merging a new `PB_VERSION` into `main` triggers
-[`.github/workflows/release.yaml`](./.github/workflows/release.yaml), which derives the image
-version from `PB_VERSION`, creates the matching GitHub release and kicks off the build and
-push to GHCR.
-
-### Repository setup
-
-- Add a repository secret `RENOVATE_TOKEN` containing a classic PAT with the `repo` and
-  `workflow` scopes. It is needed because pushes made with the default `GITHUB_TOKEN` do not
-  trigger the release workflow. Without it, Renovate falls back to `GITHUB_TOKEN` and updates
-  have to be released manually.
-- Enable *Settings → General → Allow auto-merge* so Renovate can use GitHub's native
-  auto-merge. If a branch protection rule on `main` requires the `build` check, the PR is
-  merged as soon as the image builds; otherwise Renovate merges it on its next run.
-
-You can trigger a check at any time from *Actions → Renovate → Run workflow*.
+- A `RENOVATE_TOKEN` secret with a PAT (`repo` and `workflow` scope) from an account with
+  write access. Merges made with the default `GITHUB_TOKEN` don't trigger other workflows,
+  so the release would never run.
+- *Allow auto-merge* enabled in the repository settings, plus a rule on `main` requiring the
+  `build` check so there is something to wait for.
 
 # Development
 
