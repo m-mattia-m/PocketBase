@@ -9,12 +9,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    # The PAT, not GITHUB_TOKEN: a release created by GITHUB_TOKEN doesn't fire
+    # the release event, so the publish workflow would never start.
+    env:
+      GH_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -29,37 +32,26 @@ jobs:
             exit 1
           fi
 
-          # 0.40.2 -> 1.40.2
+          # 0.40.3 -> 1.40.3
           PB_MAJOR="${PB_VERSION%%.*}"
-          PB_REST="${PB_VERSION#*.}"
-          VERSION="$((PB_MAJOR + 1)).${PB_REST}"
+          VERSION="$((PB_MAJOR + 1)).${PB_VERSION#*.}"
 
           echo "pb_version=$PB_VERSION" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "PocketBase v$PB_VERSION -> image $VERSION"
 
-      - name: Check for an existing release
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "$VERSION already released."
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Create release
-        if: steps.check.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
           PB_VERSION: ${{ steps.version.outputs.pb_version }}
         run: |
           set -euo pipefail
+
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$VERSION already released."
+            exit 0
+          fi
+
           printf '%s\n' \
             "Image for [PocketBase v${PB_VERSION}](https://github.com/pocketbase/pocketbase/releases/tag/v${PB_VERSION})." \
             "" \
@@ -72,16 +64,3 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "$VERSION" \
             --notes-file release-notes.md
-
-      - name: Publish image
-        if: steps.check.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          # A release created with GITHUB_TOKEN doesn't fire the release event.
-          gh workflow run build-publish-image-in-ghcr.yaml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref main \
-            --field image_tag="$VERSION"
