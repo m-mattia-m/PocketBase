@@ -1,7 +1,7 @@
 services:
   PocketBase:
     container_name: focus
-    image: ghcr.io/m-mattia-m/pocketbase:1.40.3
+    image: ghcr.io/m-mattia-m/pocketbase:1.40.4
     restart: unless-stopped
     ports:
       - 8080:8080
