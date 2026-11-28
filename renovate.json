@@ -13,10 +13,13 @@
   "platformAutomerge": true,
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
+  "schedule": [
+    "* * * * 6"
+  ],
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Track the PocketBase release pinned by ARG PB_VERSION in the Dockerfile",
+      "description": "Track the PocketBase release pinned by ARG PB_VERSION in the Dockerfile. PocketBase left GitHub in Oct 2026: github.com/pocketbase is archived and frozen at v0.40.6, so this follows the tags on the new upstream host rather than github-releases, which would silently never update again.",
       "managerFilePatterns": [
         "/(^|/)Dockerfile$/"
       ],
@@ -24,17 +27,31 @@
         "ARG PB_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "depNameTemplate": "pocketbase/pocketbase",
-      "datasourceTemplate": "github-releases",
+      "datasourceTemplate": "git-tags",
       "extractVersionTemplate": "^v(?<version>.+)$",
-      "versioningTemplate": "semver"
+      "versioningTemplate": "semver",
+      "packageNameTemplate": "https://ganigeorgiev.com/git/pocketbase/pocketbase"
     }
   ],
   "packageRules": [
     {
-      "matchPackageNames": [
-        "pocketbase/pocketbase"
+      "description": "PocketBase is the point of this repo: don't wait for the weekly window",
+      "commitMessageTopic": "PocketBase",
+      "schedule": [
+        "at any time"
       ],
-      "commitMessageTopic": "PocketBase"
+      "matchDepNames": [
+        "pocketbase/pocketbase"
+      ]
+    },
+    {
+      "description": "Our own image tag in docker-compose follows the release, also unscheduled",
+      "matchPackageNames": [
+        "ghcr.io/m-mattia-m/pocketbase"
+      ],
+      "schedule": [
+        "at any time"
+      ]
     }
   ]
 }

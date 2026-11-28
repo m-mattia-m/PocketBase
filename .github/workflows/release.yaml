@@ -53,7 +53,7 @@ jobs:
           fi
 
           printf '%s\n' \
-            "Image for [PocketBase v${PB_VERSION}](https://github.com/pocketbase/pocketbase/releases/tag/v${PB_VERSION})." \
+            "Image for [PocketBase v${PB_VERSION}](https://ganigeorgiev.com/pocketbase/pocketbase/releases?filter=tag%3D%27v${PB_VERSION}%27)." \
             "" \
             '```bash' \
             "docker pull ghcr.io/${GITHUB_REPOSITORY_OWNER}/pocketbase:${VERSION}" \

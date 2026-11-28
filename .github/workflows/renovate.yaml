@@ -2,9 +2,12 @@ name: Renovate
 
 on:
   schedule:
-    # Saturday 03:00 Europe/Zurich. Repeated because GitHub delays scheduled
-    # runs and sometimes skips them entirely.
-    - cron: '0 1,2,3,4 * * 6'
+    # Daily, ~03:00 Europe/Zurich. The runner has to fire often enough for the
+    # unscheduled dependencies in renovate.json (PocketBase and our own image
+    # tag) to be picked up within a day; everything else is still batched into
+    # the Saturday window by the top-level `schedule` there. Daily also makes
+    # the runs GitHub delays or drops entirely self-healing.
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 concurrency:
